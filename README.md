@@ -1,2 +1,2 @@
 # jogo-raposa
-repositório para o trabalho final de engenharia de software 2
+repositório para o trabalho final de engenharia de software ii
