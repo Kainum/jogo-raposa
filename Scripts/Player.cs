@@ -43,7 +43,7 @@ public class Player : MonoBehaviour {
 		grounded = Physics2D.Linecast(transform.position, groundCheck.position, 1 << LayerMask.NameToLayer("Ground"));
 	}
 
-	// corrige a posição y do jogador ( ainda em desenvolvimento)
+	// corrige a posição y do jogador ( vários bugs envolvidos )
 	void corrigeY () {
 		if (grounded) {
 			float x = transf.position.x;
