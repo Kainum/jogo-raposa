@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,6 +17,11 @@ public class Player : MonoBehaviour {
 	private float maxVelQueda;
 
 	private bool abaixado;
+
+	private bool isClimb;
+	public bool canClimb;
+	public float climbSpeed;
+	public float climbPos;
 
 	// Grounded
 	public  bool grounded;
@@ -38,6 +43,7 @@ public class Player : MonoBehaviour {
 		movimento ();
 		pulo ();
 		abaixar ();
+		escalar ();
 
 		checkMaxVelQueda ();
 
@@ -92,6 +98,30 @@ public class Player : MonoBehaviour {
 			abaixado = true;
 		} else {
 			abaixado = false;
+		}
+	}
+
+	// metodo para o personagem escalar (ainda em desenvolvimento)
+	void escalar() {
+		if (canClimb) {
+			if (!isClimb) {
+				if (direcaoY > 0) {
+					isClimb = true;
+				} else {
+					isClimb = false;
+				}
+			} else {
+				rb.isKinematic = true;
+				transform.position = new Vector3 (climbPos, transform.position.y, transform.position.z);
+				if (direcaoY != 0) {
+					rb.velocity = new Vector2 (0, climbSpeed * direcaoY);
+				} else {
+					rb.velocity = new Vector2 (0, 0);
+				}
+			}
+		} else {
+			rb.isKinematic = false;
+			isClimb = false;
 		}
 	}
 
