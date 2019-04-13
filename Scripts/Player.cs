@@ -4,28 +4,36 @@ using UnityEngine;
 
 public class Player : MonoBehaviour {
 
-	public	float moveSpeed;
-	public	int	jumpForce;
-
-	private float direcaoX;
-	private float direcaoY;
 
 	private Rigidbody2D rb;
 	private SpriteRenderer spRend;
 	private Animator anim;
 
-	private float maxVelQueda;
+	// VARIAVEIS DE ACOES
+
+	private float direcaoX;
+	private float direcaoY;
+
+	public	float moveSpeed;
+	public	float jumpForce;
+
+	public  bool grounded;
+	public	Transform groundCheck;
 
 	private bool abaixado;
 
 	private bool isClimb;
 	public bool canClimb;
 	public float climbSpeed;
-	public float climbPos;
+	public float climbPosX;
 
-	// Grounded
-	public  bool grounded;
-	public	Transform groundCheck;
+	private float maxVelQueda;
+
+	// VARIAVEIS DE ANIMACAO
+	private float climbPosY;
+	public int climbDif;
+	private int climbCont;
+
 
 	void Start () {
 		maxVelQueda = -3f;
@@ -38,11 +46,13 @@ public class Player : MonoBehaviour {
 		updateDirecoes ();
 
 		isGrounded ();
-		corrigeY ();
 
 		movimento ();
-		pulo ();
-		abaixar ();
+		if (grounded) {
+			corrigeY ();
+			pulo (0f);
+			abaixar ();
+		}
 		escalar ();
 
 		checkMaxVelQueda ();
@@ -63,12 +73,10 @@ public class Player : MonoBehaviour {
 
 	// corrige a posição y do jogador ( vários bugs envolvidos )
 	void corrigeY () {
-		if (grounded) {
-			float x = transform.position.x;
-			float y = Mathf.Round(transform.position.y * 100) / 100;
-			float z = transform.position.z;
-			transform.position = new Vector3(x, y, z);
-		}
+		float x = transform.position.x;
+		float y = Mathf.Round(transform.position.y * 100) / 100;
+		float z = transform.position.z;
+		transform.position = new Vector3(x, y, z);
 	}
 
 	// movimento horizonal do personagem no cenário
@@ -86,15 +94,16 @@ public class Player : MonoBehaviour {
 	}
 
 	// pulo do personagem
-	void pulo(){
-		if (Input.GetButtonDown ("Jump") && grounded) {
-			rb.AddForce (new Vector2(rb.velocity.x, jumpForce));
+	void pulo(float bonus){
+		if (Input.GetButtonDown ("Jump")) {
+			isClimb = false;
+			rb.velocity = new Vector2 (rb.velocity.x, jumpForce + bonus);
 		}
 	}
 
 	// metodo para o personagem se abaixar
 	void abaixar() {
-		if (rb.velocity.x == 0 && grounded && direcaoY == -1) {
+		if (rb.velocity.x == 0 && direcaoY == -1) {
 			abaixado = true;
 		} else {
 			abaixado = false;
@@ -105,19 +114,22 @@ public class Player : MonoBehaviour {
 	void escalar() {
 		if (canClimb) {
 			if (!isClimb) {
-				if (direcaoY > 0) {
+				if (direcaoY > 0 || (!grounded && direcaoY < 0)) {
+					climbPosY = transform.position.y;
 					isClimb = true;
 				} else {
 					isClimb = false;
 				}
 			} else {
 				rb.isKinematic = true;
-				transform.position = new Vector3 (climbPos, transform.position.y, transform.position.z);
+				transform.position = new Vector3 (climbPosX, transform.position.y, transform.position.z);
 				if (direcaoY != 0) {
+					updateClimbAnim ();
 					rb.velocity = new Vector2 (0, climbSpeed * direcaoY);
 				} else {
 					rb.velocity = new Vector2 (0, 0);
 				}
+				pulo (-1);
 			}
 		} else {
 			rb.isKinematic = false;
@@ -132,11 +144,53 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	// método para animação do personagem escalando
+	void updateClimbAnim () {
+		float atual = transform.position.y;
+		float difer;
+		bool neg;
+
+		if (atual > climbPosY) {
+			neg = false;
+			difer = (atual - climbPosY) * 100;
+		} else {
+			neg = true;
+			difer = (climbPosY - atual) * 100;
+		}
+
+
+		int cont = (int) difer / climbDif;
+		if (neg) {
+			if (cont == 3) {
+				cont = 1;
+			} else if (cont == 1) {
+				cont = 3;
+			}
+		}
+		if (cont == 4) {
+			cont = 0;
+		} else if (cont == -1) {
+			cont = 3;
+		}
+		if (climbCont != cont) {
+			if (cont == 0) {
+				climbPosY = transform.position.y;
+			}
+			climbCont = cont;
+		}
+	}
+
 	// atualiza o animator
 	void updateAnim () {
 		anim.SetFloat ("velocidadeX", Mathf.Abs(rb.velocity.x));
 		anim.SetFloat ("velocidadeY", rb.velocity.y);
 		anim.SetBool ("grounded", grounded);
 		anim.SetBool ("crouch", abaixado);
+		anim.SetBool ("climb", isClimb);
+		if (climbCont != 2) {
+			anim.SetInteger ("climbVar", climbCont);
+		} else {
+			anim.SetInteger ("climbVar", 0);
+		}
 	}
 }
