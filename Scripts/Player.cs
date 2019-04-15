@@ -11,48 +11,56 @@ public class Player : MonoBehaviour {
 
 	// VARIAVEIS DE ACOES
 
+	private float initialGravity;
+
 	private float direcaoX;
 	private float direcaoY;
 
-	public	float moveSpeed;
-	public	float jumpForce;
+	[SerializeField]
+	private float moveSpeed;
+	[SerializeField]
+	private float jumpForce;
 
-	public  bool grounded;
-	public	Transform groundCheck;
+	[SerializeField]
+	private bool grounded;
+	[SerializeField]
+	private Transform groundCheck;
 
 	private bool abaixado;
 
-	private bool isClimb;
-	public bool canClimb;
-	public float climbSpeed;
-	public float climbPosX;
+	private bool isClimbing;
+	[SerializeField]
+	private float climbSpeed;
+	[SerializeField]
+	private LayerMask whatIsLadder;
 
 	private float maxVelQueda;
 
 	// VARIAVEIS DE ANIMACAO
 	private float climbPosY;
-	public int climbDif;
+	[SerializeField]
+	private int climbDif;
 	private int climbCont;
 
 
 	void Start () {
-		maxVelQueda = -3f;
 		rb = GetComponent<Rigidbody2D> ();
 		spRend = GetComponent<SpriteRenderer> ();
 		anim = GetComponent<Animator> ();
+		initialGravity = rb.gravityScale;
+		maxVelQueda = -3f;
 	}
 
 	void Update () {
 		updateDirecoes ();
-
 		isGrounded ();
 
 		movimento ();
 		if (grounded) {
 			corrigeY ();
 			pulo (0f);
-			abaixar ();
 		}
+		abaixar ();
 		escalar ();
 
 		checkMaxVelQueda ();
@@ -61,18 +69,18 @@ public class Player : MonoBehaviour {
 	}
 
 	// define as direcoes X e Y do personagem com base nos botões de movimento do teclado
-	void updateDirecoes() {
+	private void updateDirecoes() {
 		direcaoX = Input.GetAxisRaw("Horizontal");
 		direcaoY = Input.GetAxisRaw("Vertical");
 	}
 
 	// verifica se o jogador está no chão
-	void isGrounded () {
+	private void isGrounded () {
 		grounded = Physics2D.Linecast(transform.position, groundCheck.position, 1 << LayerMask.NameToLayer("Ground"));
 	}
 
 	// corrige a posição y do jogador ( vários bugs envolvidos )
-	void corrigeY () {
+	private void corrigeY () {
 		float x = transform.position.x;
 		float y = Mathf.Round(transform.position.y * 100) / 100;
 		float z = transform.position.z;
@@ -80,7 +88,7 @@ public class Player : MonoBehaviour {
 	}
 
 	// movimento horizonal do personagem no cenário
-	void movimento () {
+	private void movimento () {
 		if (direcaoX != 0) {
 			rb.velocity = new Vector2 (moveSpeed * direcaoX, rb.velocity.y);
 			if (direcaoX > 0) {
@@ -94,16 +102,18 @@ public class Player : MonoBehaviour {
 	}
 
 	// pulo do personagem
-	void pulo(float bonus){
+	private void pulo(float bonus) {
 		if (Input.GetButtonDown ("Jump")) {
-			isClimb = false;
-			rb.velocity = new Vector2 (rb.velocity.x, jumpForce + bonus);
+			if (!isClimbing || (isClimbing && direcaoX != 0)) {
+				isClimbing = false;
+                rb.velocity = new Vector2(rb.velocity.x, jumpForce + bonus);
+            }
 		}
 	}
 
 	// metodo para o personagem se abaixar
-	void abaixar() {
-		if (rb.velocity.x == 0 && direcaoY == -1) {
+	private void abaixar() {
+		if (rb.velocity.x == 0 && direcaoY == -1 && grounded) {
 			abaixado = true;
 		} else {
 			abaixado = false;
@@ -111,41 +121,51 @@ public class Player : MonoBehaviour {
 	}
 
 	// metodo para o personagem escalar (ainda em desenvolvimento)
-	void escalar() {
-		if (canClimb) {
-			if (!isClimb) {
-				if (direcaoY > 0 || (!grounded && direcaoY < 0)) {
-					climbPosY = transform.position.y;
-					isClimb = true;
-				} else {
-					isClimb = false;
-				}
-			} else {
-				rb.isKinematic = true;
-				transform.position = new Vector3 (climbPosX, transform.position.y, transform.position.z);
-				if (direcaoY != 0) {
-					updateClimbAnim ();
-					rb.velocity = new Vector2 (0, climbSpeed * direcaoY);
-				} else {
-					rb.velocity = new Vector2 (0, 0);
-				}
-				pulo (-1);
+	private void escalar () {
+		Vector3 posicao = new Vector3(transform.position.x, transform.position.y-0.16f, transform.position.z);
+		RaycastHit2D hitInfo = Physics2D.Raycast (posicao, Vector2.up, 0.12f, whatIsLadder);
+
+		if (hitInfo.collider != null) {
+			if (Input.GetKeyDown (KeyCode.UpArrow)) {
+                if (!isClimbing) {
+                    corrigeX();
+                }
+                isClimbing = true;
+				climbPosY = transform.position.y;
 			}
 		} else {
-			rb.isKinematic = false;
-			isClimb = false;
+			isClimbing = false;
+		}
+
+		if (isClimbing) {
+			rb.gravityScale = 0;
+			rb.velocity = new Vector2 (0, direcaoY * climbSpeed);
+			pulo (-1f);
+			updateClimbAnim ();
+		} else {
+			rb.gravityScale = initialGravity;
 		}
 	}
 
+    private void corrigeX () {
+        int atualPosX = (int) (transform.position.x * 100);
+        int resto = atualPosX % 16 - 8;
+        float objetivoX = (atualPosX - resto);
+        float x = objetivoX / 100;
+        float y = transform.position.y;
+        float z = transform.position.z;
+        transform.position = new Vector3(x, y, z);
+    }
+
 	// método para limitar a velocidade máxima de queda do personagem
-	void checkMaxVelQueda() {
+	private void checkMaxVelQueda() {
 		if (rb.velocity.y < maxVelQueda) {
 			rb.velocity = new Vector2 (rb.velocity.x, maxVelQueda);
 		}
 	}
 
 	// método para animação do personagem escalando
-	void updateClimbAnim () {
+	private void updateClimbAnim () {
 		float atual = transform.position.y;
 		float difer;
 		bool neg;
@@ -181,12 +201,12 @@ public class Player : MonoBehaviour {
 	}
 
 	// atualiza o animator
-	void updateAnim () {
+	private void updateAnim () {
 		anim.SetFloat ("velocidadeX", Mathf.Abs(rb.velocity.x));
 		anim.SetFloat ("velocidadeY", rb.velocity.y);
 		anim.SetBool ("grounded", grounded);
 		anim.SetBool ("crouch", abaixado);
-		anim.SetBool ("climb", isClimb);
+		anim.SetBool ("climb", isClimbing);
 		if (climbCont != 2) {
 			anim.SetInteger ("climbVar", climbCont);
 		} else {
