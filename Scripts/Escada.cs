@@ -4,23 +4,25 @@ using UnityEngine;
 
 public class Escada : MonoBehaviour {
 
-	private float posX;
-	private bool canClimb;
-
-	public Transform inicio;
-	public Transform fim;
-	public Player player;
+	[SerializeField]
+	private float waitTime;
+	private float waitTime2;
+	private PlatformEffector2D effector;
 
 	void Start () {
-		posX = transform.position.x;
+		effector = GetComponent<PlatformEffector2D> ();
 	}
 
 	void Update () {
 
-		canClimb = Physics2D.Linecast(inicio.position, fim.position, 1 << LayerMask.NameToLayer("Player"));
-		player.canClimb = canClimb;
-		if (canClimb) {
-			player.climbPos = posX;
+		if (Input.GetKey (KeyCode.DownArrow)) {
+			effector.rotationalOffset = 180f;
+			waitTime2 = waitTime;
+		}
+		if (waitTime2 > 0) {
+			waitTime2 -= Time.deltaTime;
+		} else {
+			effector.rotationalOffset = 0f;
 		}
 	}
 }
