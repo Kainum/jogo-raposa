@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,6 +18,7 @@ namespace AssemblyCSharp
 		private int qtdPulos;
 
 		void Start () {
+			facingRight = false;
 			health = maxHealth;
 			spawnLocation = transform.position;
 			spawnRotation = transform.rotation;
@@ -33,17 +34,15 @@ namespace AssemblyCSharp
 
 		// pulo do sapo
 		private void Pulo () {
-			if (intervaloCount <= 0) {
-				if (grounded) {
-					if (qtdPulos == 0) {
-						Flip ();
-						qtdPulos = MaxQtdPulos;
-					}
-					rb.velocity = new Vector2(distanciaPulo * (facingRight ? 1 : -1), alturaPulo);
-					intervaloCount = intervaloPulo;
-					if (MaxQtdPulos != -1) {
-						qtdPulos -= 1;
-					}
+			if (intervaloCount <= 0 && grounded) {
+				if (qtdPulos == 0) {
+					Flip ();
+					qtdPulos = MaxQtdPulos;
+				}
+				rb.velocity = new Vector2(distanciaPulo * (facingRight ? 1 : -1), alturaPulo);
+				intervaloCount = intervaloPulo;
+				if (MaxQtdPulos != -1) {
+					qtdPulos -= 1;
 				}
 			} else {
 				intervaloCount -= Time.deltaTime;
@@ -56,6 +55,9 @@ namespace AssemblyCSharp
 				rb.velocity = new Vector2(0f, rb.velocity.y);
 			}
 		}
+
+		protected override void UpdateAnim () {
+
+		}
 	}
 }
-
