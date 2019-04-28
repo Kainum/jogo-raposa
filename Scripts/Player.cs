@@ -6,12 +6,13 @@ public class Player : MonoBehaviour {
 
 
 	private Rigidbody2D rb;
-	private SpriteRenderer spRend;
 	private Animator anim;
 
 	// VARIAVEIS DE ACOES
 
 	private float initialGravity;
+
+	private bool facingRight = true;
 
 	private float direcaoX;
 	private float direcaoY;
@@ -45,7 +46,6 @@ public class Player : MonoBehaviour {
 
 	void Start () {
 		rb = GetComponent<Rigidbody2D> ();
-		spRend = GetComponent<SpriteRenderer> ();
 		anim = GetComponent<Animator> ();
 		initialGravity = rb.gravityScale;
 		maxVelQueda = -3f;
@@ -91,14 +91,18 @@ public class Player : MonoBehaviour {
 	private void movimento () {
 		if (direcaoX != 0) {
 			rb.velocity = new Vector2 (moveSpeed * direcaoX, rb.velocity.y);
-			if (direcaoX > 0) {
-				spRend.flipX = false;
-			} else {
-				spRend.flipX = true;
+			if ((direcaoX > 0 && !facingRight) || (direcaoX < 0 && facingRight)) {
+				Flip ();
 			}
 		} else {
 			rb.velocity = new Vector2 (0, rb.velocity.y);
 		}
+	}
+
+	// metodo para inverter direção que o personagem está olhando
+	private void Flip() {
+		facingRight = !facingRight;
+		transform.Rotate (0f, 180f, 0f);
 	}
 
 	// pulo do personagem
@@ -133,11 +137,15 @@ public class Player : MonoBehaviour {
                 isClimbing = true;
 				climbPosY = transform.position.y;
 			}
+
 		} else {
 			isClimbing = false;
 		}
-
 		if (isClimbing) {
+			if (grounded && Input.GetKey (KeyCode.DownArrow)) {
+				isClimbing = false;
+				return;
+			}
 			rb.gravityScale = 0;
 			rb.velocity = new Vector2 (0, direcaoY * climbSpeed);
 			pulo (-1f);
