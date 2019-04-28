@@ -1,18 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public class Player : MonoBehaviour {
+public class Player : Personagem {
 
+	// VARIAVEIS DE COMBATE
 
-	private Rigidbody2D rb;
-	private Animator anim;
+	[SerializeField]
+	private float invincibilityTime;
+	private float invincibilitytimeCount;
+	private bool invincible;
 
 	// VARIAVEIS DE ACOES
 
 	private float initialGravity;
-
-	private bool facingRight = true;
 
 	private float direcaoX;
 	private float direcaoY;
@@ -22,11 +24,6 @@ public class Player : MonoBehaviour {
 	[SerializeField]
 	private float jumpForce;
 
-	[SerializeField]
-	private bool grounded;
-	[SerializeField]
-	private Transform groundCheck;
-
 	private bool abaixado;
 
 	private bool isClimbing;
@@ -34,8 +31,6 @@ public class Player : MonoBehaviour {
 	private float climbSpeed;
 	[SerializeField]
 	private LayerMask whatIsLadder;
-
-	private float maxVelQueda;
 
 	// VARIAVEIS DE ANIMACAO
 	private float climbPosY;
@@ -49,46 +44,45 @@ public class Player : MonoBehaviour {
 		anim = GetComponent<Animator> ();
 		initialGravity = rb.gravityScale;
 		maxVelQueda = -3f;
+		health = maxHealth;
 	}
 
 	void Update () {
-		updateDirecoes ();
-		isGrounded ();
+		UpdateDirecoes ();
+		IsGrounded ();
 
-		movimento ();
+		Movimento ();
 		if (grounded) {
-			corrigeY ();
-			pulo (0f);
+			CorrigeY ();
+			Pulo (0f);
 		}
-		abaixar ();
-		escalar ();
+		Abaixar ();
+		Escalar ();
+		if (invincible) {
+			Invencibilidade ();
+		}
 
-		checkMaxVelQueda ();
+		CheckMaxVelQueda ();
 
-		updateAnim ();
+		UpdateAnim ();
 	}
 
 	// define as direcoes X e Y do personagem com base nos botões de movimento do teclado
-	private void updateDirecoes() {
+	private void UpdateDirecoes() {
 		direcaoX = Input.GetAxisRaw("Horizontal");
 		direcaoY = Input.GetAxisRaw("Vertical");
 	}
 
-	// verifica se o jogador está no chão
-	private void isGrounded () {
-		grounded = Physics2D.Linecast(transform.position, groundCheck.position, 1 << LayerMask.NameToLayer("Ground"));
-	}
-
 	// corrige a posição y do jogador ( vários bugs envolvidos )
-	private void corrigeY () {
+	private void CorrigeY () {
 		float x = transform.position.x;
 		float y = Mathf.Round(transform.position.y * 100) / 100;
 		float z = transform.position.z;
 		transform.position = new Vector3(x, y, z);
 	}
 
-	// movimento horizonal do personagem no cenário
-	private void movimento () {
+	// movimento horizontal do personagem no cenário
+	private void Movimento () {
 		if (direcaoX != 0) {
 			rb.velocity = new Vector2 (moveSpeed * direcaoX, rb.velocity.y);
 			if ((direcaoX > 0 && !facingRight) || (direcaoX < 0 && facingRight)) {
@@ -99,14 +93,8 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-	// metodo para inverter direção que o personagem está olhando
-	private void Flip() {
-		facingRight = !facingRight;
-		transform.Rotate (0f, 180f, 0f);
-	}
-
-	// pulo do personagem
-	private void pulo(float bonus) {
+	// Pulo do personagem
+	private void Pulo(float bonus) {
 		if (Input.GetButtonDown ("Jump")) {
 			if (!isClimbing || (isClimbing && direcaoX != 0)) {
 				isClimbing = false;
@@ -115,8 +103,8 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-	// metodo para o personagem se abaixar
-	private void abaixar() {
+	// metodo para o personagem se Abaixar
+	private void Abaixar() {
 		if (rb.velocity.x == 0 && direcaoY == -1 && grounded) {
 			abaixado = true;
 		} else {
@@ -124,8 +112,8 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-	// metodo para o personagem escalar (ainda em desenvolvimento)
-	private void escalar () {
+	// metodo para o personagem Escalar (ainda em desenvolvimento)
+	private void Escalar () {
 		Vector3 posicao = new Vector3(transform.position.x, transform.position.y-0.16f, transform.position.z);
 		RaycastHit2D hitInfo = Physics2D.Raycast (posicao, Vector2.up, 0.12f, whatIsLadder);
 
@@ -137,7 +125,6 @@ public class Player : MonoBehaviour {
                 isClimbing = true;
 				climbPosY = transform.position.y;
 			}
-
 		} else {
 			isClimbing = false;
 		}
@@ -148,7 +135,7 @@ public class Player : MonoBehaviour {
 			}
 			rb.gravityScale = 0;
 			rb.velocity = new Vector2 (0, direcaoY * climbSpeed);
-			pulo (-1f);
+			Pulo (-1f);
 			updateClimbAnim ();
 		} else {
 			rb.gravityScale = initialGravity;
@@ -165,13 +152,6 @@ public class Player : MonoBehaviour {
         transform.position = new Vector3(x, y, z);
     }
 
-	// método para limitar a velocidade máxima de queda do personagem
-	private void checkMaxVelQueda() {
-		if (rb.velocity.y < maxVelQueda) {
-			rb.velocity = new Vector2 (rb.velocity.x, maxVelQueda);
-		}
-	}
-
 	// método para animação do personagem escalando
 	private void updateClimbAnim () {
 		float atual = transform.position.y;
@@ -185,7 +165,6 @@ public class Player : MonoBehaviour {
 			neg = true;
 			difer = (climbPosY - atual) * 100;
 		}
-
 
 		int cont = (int) difer / climbDif;
 		if (neg) {
@@ -208,8 +187,35 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	private void Invencibilidade () {
+		if (invincibilitytimeCount > 0) {
+			invincibilitytimeCount -= Time.deltaTime;
+		} else {
+			invincible = false;
+			int enemyLayer = LayerMask.NameToLayer ("Enemy");
+			int playerLayer = LayerMask.NameToLayer ("Player");
+			Physics2D.IgnoreLayerCollision (enemyLayer, playerLayer, false);
+			anim.SetLayerWeight (1, 0);
+		}
+	}
+
+	// método que ocorre quando o player recebe dano
+	protected override void Hurt () {
+		invincible = true;
+		invincibilitytimeCount = invincibilityTime;
+		int enemyLayer = LayerMask.NameToLayer ("Enemy");
+		int playerLayer = LayerMask.NameToLayer ("Player");
+		Physics2D.IgnoreLayerCollision (enemyLayer, playerLayer);
+		anim.SetLayerWeight (1, 1);
+	}
+
+	protected override void Die () {
+		Debug.Log("Você morreu.");
+		SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+	}
+
 	// atualiza o animator
-	private void updateAnim () {
+	protected override void UpdateAnim () {
 		anim.SetFloat ("velocidadeX", Mathf.Abs(rb.velocity.x));
 		anim.SetFloat ("velocidadeY", rb.velocity.y);
 		anim.SetBool ("grounded", grounded);
@@ -219,6 +225,13 @@ public class Player : MonoBehaviour {
 			anim.SetInteger ("climbVar", climbCont);
 		} else {
 			anim.SetInteger ("climbVar", 0);
+		}
+	}
+
+	protected void OnCollisionEnter2D (Collision2D collision) {
+		Enemy enemy = collision.collider.GetComponent<Enemy>();
+		if (enemy != null) {
+			TakeDamage(enemy.contactDamage);
 		}
 	}
 }
