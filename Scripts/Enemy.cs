@@ -10,9 +10,8 @@ public abstract class Enemy : Personagem {
 	protected Vector3 spawnLocation;
 	protected Quaternion spawnRotation;
 
-	public int contactDamage;
-
-	protected bool colidindo;
+	[SerializeField]
+	protected int contactDamage;
 
 	protected override void Hurt () {
 		// NADA AQUI POR ENQUANTO.
@@ -20,6 +19,14 @@ public abstract class Enemy : Personagem {
 
 	// esse método é disparado quando o personagem morre
 	protected override void Die () {
+		Instantiate (deathEffect, transform.position, transform.rotation);
 		Destroy (gameObject);
+	}
+
+	protected void OnTriggerEnter2D (Collider2D col) {
+		Player player = col.GetComponent<Player>();
+		if (player != null) {
+			player.TakeDamage(contactDamage);
+		}
 	}
 }
