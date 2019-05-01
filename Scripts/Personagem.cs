@@ -41,15 +41,22 @@ public abstract class Personagem : MonoBehaviour {
 	}
 
     // método para infligir dano na vida do personagem
-	public void TakeDamage (int damage) {
+	public void TakeDamage (int value) {
 		
-		health -= damage;
+		health -= value;
 
 		if (health <= 0) {
 			Die ();
 		} else {
             Hurt ();
         }
+	}
+
+	// método para recuperar a vida do personagem
+	public void Heal (int value) {
+
+		health = health + value > maxHealth ? maxHealth : health + value;
+
 	}
 
 	// esse método é disparado quando o personagem morre
