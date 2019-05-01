@@ -5,12 +5,28 @@ using UnityEngine.SceneManagement;
 
 public class Player : Personagem {
 
+	private const int maxGems = 100;
+	private const int maxCherries = 100;
+
+	[HideInInspector]
+	public int qtdGems;
+	[HideInInspector]
+	public int qtdCherries;
+
 	// VARIAVEIS DE COMBATE
 
 	[SerializeField]
 	private float invincibilityTime;
 	private float invincibilitytimeCount;
 	private bool invincible;
+
+	[SerializeField]
+	private Transform firePoint;
+	[SerializeField]
+	private GameObject cherryShoot;
+	[SerializeField]
+	private float intervalo; // TEMPO ENTRE UM DISPARO E OUTRO
+	private float intervaloCount;
 
 	// VARIAVEIS DE ACOES
 
@@ -56,6 +72,7 @@ public class Player : Personagem {
 			CorrigeY ();
 			Pulo (0f);
 		}
+		Atirar ();
 		Abaixar ();
 		Escalar ();
 		if (invincible) {
@@ -100,6 +117,23 @@ public class Player : Personagem {
 				isClimbing = false;
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce + bonus);
             }
+		}
+	}
+
+	// metodo para o player arremessar cerejas
+	private void Atirar() {
+		if (intervaloCount <= 0) {
+			if (Input.GetButton ("Fire1")) {
+				if (qtdCherries > 0) {
+					ModCherry (-1);
+					Instantiate (cherryShoot, firePoint.position, firePoint.rotation);
+					intervaloCount = intervalo;
+				} else {
+					//	SOM DE IMPOSSIVEL
+				}
+			}
+		} else {
+			intervaloCount -= Time.deltaTime;
 		}
 	}
 
@@ -210,8 +244,39 @@ public class Player : Personagem {
 	}
 
 	protected override void Die () {
+		/*
+		if (Game.qtdVidas == 0) {
+			Game.GameOver ();
+		}										** AINDA NÃO IMPLEMENTADO */
 		Debug.Log("Você morreu.");
 		SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+	}
+
+	// método para modificar a quantidade de cerejas do jogador
+	public void ModCherry (int value) {
+		if (value > 0) {
+			qtdCherries = qtdCherries + value > maxCherries ? maxCherries : qtdCherries + value;
+		} else {
+			qtdCherries = qtdCherries + value < 0 ? 0 : qtdCherries + value;
+		}
+		Debug.Log ("Cherries: " + qtdCherries);
+	}
+
+	// método para modificar a quantidade de gemas do jogador
+	public void ModGems (int value) {
+		int finalValue = qtdGems + value;
+		if (value > 0) {
+			if (finalValue < maxGems) {
+				qtdGems = finalValue;
+			} else {
+				qtdGems = finalValue - maxGems;
+				Debug.Log ("Você recebeu uma vida.");
+				//Game.qtdVidas++;		** AINDA NÃO IMPLEMENTADO **
+			}
+		} else {
+			qtdGems = finalValue < 0 ? 0 : finalValue;
+		}
+		Debug.Log ("Gems: " + qtdGems);
 	}
 
 	// atualiza o animator
@@ -225,13 +290,6 @@ public class Player : Personagem {
 			anim.SetInteger ("climbVar", climbCont);
 		} else {
 			anim.SetInteger ("climbVar", 0);
-		}
-	}
-
-	protected void OnCollisionEnter2D (Collision2D collision) {
-		Enemy enemy = collision.collider.GetComponent<Enemy>();
-		if (enemy != null) {
-			TakeDamage(enemy.contactDamage);
 		}
 	}
 }
