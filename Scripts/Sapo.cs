@@ -22,6 +22,7 @@ namespace AssemblyCSharp
 			health = maxHealth;
 			spawnLocation = transform.position;
 			spawnRotation = transform.rotation;
+			anim = GetComponent<Animator> ();
 			rb = GetComponent<Rigidbody2D> ();
 			qtdPulos = MaxQtdPulos;
 		}
@@ -30,6 +31,8 @@ namespace AssemblyCSharp
 			IsGrounded ();
 			FicaParado ();
 			Pulo ();
+
+			UpdateAnim ();
 		}
 
 		// pulo do sapo
@@ -57,7 +60,8 @@ namespace AssemblyCSharp
 		}
 
 		protected override void UpdateAnim () {
-
+			anim.SetBool ("grounded", grounded);
+			anim.SetFloat ("velocityY", rb.velocity.y);
 		}
 	}
 }
