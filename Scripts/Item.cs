@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,6 +8,7 @@ public abstract class Item : MonoBehaviour {
 	private int value;
 	[SerializeField]
 	private GameObject item_effect;
+	public float dropChance;
 
 	protected void OnTriggerEnter2D (Collider2D col) {
 		Player player = col.GetComponent<Player>();
