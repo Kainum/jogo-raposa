@@ -45,19 +45,15 @@ public abstract class Personagem : MonoBehaviour {
 		
 		health -= value;
 
+		Hurt ();
+
 		if (health <= 0) {
 			Die ();
-		} else {
-            Hurt ();
-        }
+		}
 	}
 
 	// método para recuperar a vida do personagem
-	public void Heal (int value) {
-
-		health = health + value > maxHealth ? maxHealth : health + value;
-
-	}
+	public abstract void Heal (int value);
 
 	// esse método é disparado quando o personagem morre
 	protected abstract void Die ();

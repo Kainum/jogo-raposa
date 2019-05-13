@@ -5,14 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class Player : Personagem {
 
-	private const int maxGems = 100;
-	private const int maxCherries = 100;
-
-	[HideInInspector]
-	public int qtdGems;
-	[HideInInspector]
-	public int qtdCherries;
-
 	// VARIAVEIS DE COMBATE
 
 	[SerializeField]
@@ -49,6 +41,7 @@ public class Player : Personagem {
 	private LayerMask whatIsLadder;
 
 	// VARIAVEIS DE ANIMACAO
+
 	private float climbPosY;
 	[SerializeField]
 	private int climbDif;
@@ -56,14 +49,16 @@ public class Player : Personagem {
 
 
 	void Start () {
-		rb = GetComponent<Rigidbody2D> ();
+		Game.GameStart ();
+
+        rb = GetComponent<Rigidbody2D> ();
 		anim = GetComponent<Animator> ();
 		initialGravity = rb.gravityScale;
 		maxVelQueda = -3f;
 		health = maxHealth;
 	}
 
-	void Update () {
+	void FixedUpdate() {
 		UpdateDirecoes ();
 		IsGrounded ();
 
@@ -122,14 +117,17 @@ public class Player : Personagem {
 
 	// metodo para o player arremessar cerejas
 	private void Atirar() {
+		if (Input.GetButtonDown("Fire1")) {
+			if (Game.qtdCherries == 0) {
+				//	SOM DE IMPOSSIVEL
+			}
+		}
 		if (intervaloCount <= 0) {
 			if (Input.GetButton ("Fire1")) {
-				if (qtdCherries > 0) {
-					ModCherry (-1);
+				if (Game.qtdCherries > 0) {
+					Game.ModCherry (-1);
 					Instantiate (cherryShoot, firePoint.position, firePoint.rotation);
 					intervaloCount = intervalo;
-				} else {
-					//	SOM DE IMPOSSIVEL
 				}
 			}
 		} else {
@@ -137,7 +135,7 @@ public class Player : Personagem {
 		}
 	}
 
-	// metodo para o personagem se Abaixar
+	// metodo para o personagem se abaixar
 	private void Abaixar() {
 		if (rb.velocity.x == 0 && direcaoY == -1 && grounded) {
 			abaixado = true;
@@ -146,7 +144,7 @@ public class Player : Personagem {
 		}
 	}
 
-	// metodo para o personagem Escalar (ainda em desenvolvimento)
+	// metodo para o personagem escalar (ainda em desenvolvimento)
 	private void Escalar () {
 		Vector3 posicao = new Vector3(transform.position.x, transform.position.y-0.16f, transform.position.z);
 		RaycastHit2D hitInfo = Physics2D.Raycast (posicao, Vector2.up, 0.12f, whatIsLadder);
@@ -233,50 +231,34 @@ public class Player : Personagem {
 		}
 	}
 
+	// método para recuperar a vida do personagem
+	public override void Heal (int value) {
+
+		health = health + value > maxHealth ? maxHealth : health + value;
+		Game.UpdateCanvasHealth (health);
+	}
+
 	// método que ocorre quando o player recebe dano
 	protected override void Hurt () {
-		invincible = true;
-		invincibilitytimeCount = invincibilityTime;
-		int enemyLayer = LayerMask.NameToLayer ("Enemy");
-		int playerLayer = LayerMask.NameToLayer ("Player");
-		Physics2D.IgnoreLayerCollision (enemyLayer, playerLayer);
-		anim.SetLayerWeight (1, 1);
+		Game.UpdateCanvasHealth (health);
+		if (health > 0) {
+			invincible = true;
+			invincibilitytimeCount = invincibilityTime;
+			int enemyLayer = LayerMask.NameToLayer ("Enemy");
+			int playerLayer = LayerMask.NameToLayer ("Player");
+			Physics2D.IgnoreLayerCollision (enemyLayer, playerLayer);
+			anim.SetLayerWeight (1, 1);
+		}
 	}
 
 	protected override void Die () {
-		/*
 		if (Game.qtdVidas == 0) {
 			Game.GameOver ();
-		}										** AINDA NÃO IMPLEMENTADO */
-		Debug.Log("Você morreu.");
-		SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-	}
-
-	// método para modificar a quantidade de cerejas do jogador
-	public void ModCherry (int value) {
-		if (value > 0) {
-			qtdCherries = qtdCherries + value > maxCherries ? maxCherries : qtdCherries + value;
 		} else {
-			qtdCherries = qtdCherries + value < 0 ? 0 : qtdCherries + value;
+			Game.qtdVidas--;
+			Game.UpdateCanvasLife ();
+			SceneManager.LoadScene(SceneManager.GetActiveScene().name);
 		}
-		Debug.Log ("Cherries: " + qtdCherries);
-	}
-
-	// método para modificar a quantidade de gemas do jogador
-	public void ModGems (int value) {
-		int finalValue = qtdGems + value;
-		if (value > 0) {
-			if (finalValue < maxGems) {
-				qtdGems = finalValue;
-			} else {
-				qtdGems = finalValue - maxGems;
-				Debug.Log ("Você recebeu uma vida.");
-				//Game.qtdVidas++;		** AINDA NÃO IMPLEMENTADO **
-			}
-		} else {
-			qtdGems = finalValue < 0 ? 0 : finalValue;
-		}
-		Debug.Log ("Gems: " + qtdGems);
 	}
 
 	// atualiza o animator
